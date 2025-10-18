@@ -1,0 +1,141 @@
+// #include "frame_sync/msg/synced_data.hpp"
+#include "frame_sync_msgs/msg/synced_data.hpp"
+#include <message_filters/subscriber.h>
+#include <message_filters/sync_policies/approximate_time.h>
+#include <message_filters/synchronizer.h>
+#include <message_filters/time_synchronizer.h>
+#include <rclcpp/rclcpp.hpp>
+#include <sensor_msgs/msg/image.hpp>
+#include <sensor_msgs/msg/joint_state.hpp>
+class FrameSyncNode : public rclcpp::Node {
+public:
+  FrameSyncNode() : Node("frame_sync_node") {
+    RCLCPP_INFO(this->get_logger(), "Frame Sync Node has started.");
+    // 初始化相机订阅者数组
+    std::vector<std::string> camera_topics = {"/left_camera/color/image_raw",
+                                              "/right_camera/color/image_raw",
+                                              "/top_camera/color/image_raw"};
+    for (const auto &topic : camera_topics) {
+      image_subs_.emplace_back(
+          std::make_shared<
+              message_filters::Subscriber<sensor_msgs::msg::Image>>(this,
+                                                                    topic));
+    }
+    // 初始化机械臂订阅者数组
+    std::vector<std::string> arm_topics = {"/left_arm/joint_states",
+                                           "/right_arm/joint_states"};
+    for (const auto &topic : arm_topics) {
+      arm_subs_.emplace_back(
+          std::make_shared<
+              message_filters::Subscriber<sensor_msgs::msg::JointState>>(
+              this, topic));
+    }
+    SyncedData_pub_ =
+        this->create_publisher<frame_sync_msgs::msg::SyncedData>("/syncedData", 10);
+
+    // 使用ApproximateTime策略
+    typedef message_filters::sync_policies::ApproximateTime<
+        sensor_msgs::msg::Image, sensor_msgs::msg::Image,
+        sensor_msgs::msg::Image, sensor_msgs::msg::JointState,
+        sensor_msgs::msg::JointState>
+        ApproxSyncPolicy;
+
+    sync_ = std::make_shared<message_filters::Synchronizer<ApproxSyncPolicy>>(
+        ApproxSyncPolicy(10), *image_subs_[0], *image_subs_[1], *image_subs_[2],
+        *arm_subs_[0], *arm_subs_[1]);
+
+    sync_->registerCallback(
+        std::bind(&FrameSyncNode::callback, this, std::placeholders::_1,
+                  std::placeholders::_2, std::placeholders::_3,
+                  std::placeholders::_4, std::placeholders::_5));
+    RCLCPP_INFO(this->get_logger(), "Arm and camera sync node initialized");
+  }
+  ~FrameSyncNode() {
+    RCLCPP_INFO(this->get_logger(), "Frame Sync Node is shutting down.");
+    // Cleanup code here
+  }
+
+private:
+  void
+  callback(const sensor_msgs::msg::Image::ConstSharedPtr &image1,
+           const sensor_msgs::msg::Image::ConstSharedPtr &image2,
+           const sensor_msgs::msg::Image::ConstSharedPtr &image3,
+           const sensor_msgs::msg::JointState::ConstSharedPtr &arm1_state,
+           const sensor_msgs::msg::JointState::ConstSharedPtr &arm2_state) {
+    // 打印时间戳以验证同步
+    double time1 =
+        image1->header.stamp.sec + image1->header.stamp.nanosec * 1e-9;
+    double time2 =
+        image2->header.stamp.sec + image2->header.stamp.nanosec * 1e-9;
+    double time3 =
+        image3->header.stamp.sec + image3->header.stamp.nanosec * 1e-9;
+    double time_arm1 =
+        arm1_state->header.stamp.sec + arm1_state->header.stamp.nanosec * 1e-9;
+    double time_arm2 =
+        arm2_state->header.stamp.sec + arm2_state->header.stamp.nanosec * 1e-9;
+    double avg_time = (time1 + time2 + time3 + time_arm1 + time_arm2) / 5.0;
+    RCLCPP_INFO(this->get_logger(),
+                "Synchronized data at time: Image1 %f, Image2 %f, Image3 %f, "
+                "Arm1 %f, Arm2 %f",
+                time1, time2, time3, time_arm1, time_arm2);
+
+    // Create the combined message
+    auto combined_msg = std::make_unique<frame_sync_msgs::msg::SyncedData>();
+
+    // Copy the input messages into the combined message
+    combined_msg->left_image = *image1;
+    combined_msg->right_image = *image2;
+    combined_msg->top_image = *image3;
+    combined_msg->left_joint_states = *arm1_state;
+    combined_msg->right_joint_states = *arm2_state;
+    // Convert back to sec and nanosec
+    int32_t sec = static_cast<int32_t>(std::floor(avg_time));
+    uint32_t nanosec = static_cast<uint32_t>((avg_time - sec) * 1e9);
+
+    // Set the header timestamp
+    combined_msg->header.stamp.sec = sec;
+    combined_msg->header.stamp.nanosec = nanosec;
+    combined_msg->header.frame_id = "synced_data"; // Optional: set frame_id
+    // combined_msg->header.stamp.sec = sec;
+    // combined_msg->header.stamp.nanosec = nanosec;
+    // combined_msg->header.frame_id =
+    //     image1->header
+    //         .frame_id; // Optional: use frame_id from image1 or set as needed
+    SyncedData_pub_->publish(std::move(combined_msg));
+    // 在此处处理同步后的数据
+    // 示例：访问图像和机械臂状态
+    // for (size_t i = 0; i < cv_images.size(); ++i) {
+    //   cv::imshow("Camera " + std::to_string(i + 1), cv_images[i]->image);
+    // }
+    // cv::waitKey(1);
+    // for (const auto &pos : arm1_state->position) {
+    //   RCLCPP_INFO(this->get_logger(), "Arm1 joint position: %f", pos);
+    // }
+  }
+  std::vector<
+      std::shared_ptr<message_filters::Subscriber<sensor_msgs::msg::Image>>>
+      image_subs_;
+  std::vector<std::shared_ptr<
+      message_filters::Subscriber<sensor_msgs::msg::JointState>>>
+      arm_subs_;
+  std::shared_ptr<message_filters::Synchronizer<
+      message_filters::sync_policies::ApproximateTime<
+          sensor_msgs::msg::Image, sensor_msgs::msg::Image,
+          sensor_msgs::msg::Image, sensor_msgs::msg::JointState,
+          sensor_msgs::msg::JointState>>>
+      sync_;
+  std::vector<rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr>
+      debug_image_subs_;
+  std::vector<rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr>
+      debug_arm_subs_;
+  rclcpp::Publisher<frame_sync_msgs::msg::SyncedData>::SharedPtr SyncedData_pub_;
+};
+
+int main() {
+  rclcpp::init(0, nullptr);
+  auto node = std::make_shared<FrameSyncNode>();
+  RCLCPP_INFO(node->get_logger(), "Frame Sync Node has started.");
+  rclcpp::spin(node);
+  rclcpp::shutdown();
+  return 0;
+}

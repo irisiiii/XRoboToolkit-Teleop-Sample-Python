@@ -1,0 +1,40 @@
+frame_sync_node:
+  ros__parameters:
+    publisher_hz: 200
+    # camera_topic_names:
+    #   - "/left_camera/color/image_raw"
+    #   - "/right_camera/color/image_raw"
+    #   - "/top_camera/color/image_raw"
+    # arm_joints_topic_names:
+    #   - "/left_arm/joint_states"
+    #   - "/right_arm/joint_states"
+    # tcp_topic_names:
+    #   - "left_arm/tcp_pose"
+    #   - "/right_arm/tcp_pose"
+    # gripper_topic_names:
+    #   - "/left_arm/gripper_state"
+    #   - "/right_arm/gripper_state"
+    camera_topic_names:
+      - "/camera1/left_camera/color/image_rect_raw"
+      - "/camera2/right_camera/color/image_rect_raw"
+      - "/camera/color/image_raw"
+    arm_joints_topic_names:
+      - "/left_arm/joint_states"
+      - "/right_arm/joint_states"
+    tcp_topic_names:
+      - "/left_arm/tcp_pose"
+      - "/right_arm/tcp_pose"
+    gripper_topic_names:
+      # - "/left_arm/lingqiaoshou_state"   
+      # - "/right_arm/lingqiaoshou_state"  
+      # - "/left_arm/jiazhua_state"  
+      # - "/right_arm/jiazhua_state"
+      - "/left_arm/jiazhua_state"
+      - "/right_arm/jiazhua_state"
+    enable_save_dataset: true #是否开启dataset保存模式
+    dataset_save_path: "./data"  # dataset保存路径
+    enable_limit_numbers_of_frames_to_save: true  # 是否开启限制帧数
+    limit_numbers_of_frames_to_save: 80  # 最多采集多少帧数
+    gripper_trigger_timeout_sec: 5.0  # 夹爪序列检测超时时间（秒）
+    gripper_trigger_countdown_sec: 3.0  # 夹爪触发后倒计时秒数
+    enable_continuous_collection: true  # 是否开启连续采集模式（完成一轮后重新开始监听）

@@ -8,8 +8,6 @@ import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import JointState
 from jaka_robot_interfaces.msg import RobotStateDual, ServoJointCommand
-from jiazhua_interfaces.msg import JiaZhuaDualCmd
-from frame_sync_msgs.msg import StampedFloat64MultiArray
 
 # 导入XRoboToolkit的核心组件
 from xrobotoolkit_teleop.common.data_logger import DataLogger
@@ -85,10 +83,6 @@ class JAKATeleopROS2Node(Node):
         # 激活状态
         self.active = {"left_arm": False, "right_arm": False}
         
-        # 夹爪状态
-        self.gripper_states = {"left": 1.0, "right": 1.0}  # 1.0=松开, 0.0=夹紧
-        self.gripper_speed = 0.5  # 夹爪速度
-        
         # ROS2发布者和订阅者
         self.servo_joint_pub = self.create_publisher(
             ServoJointCommand, 
@@ -106,28 +100,6 @@ class JAKATeleopROS2Node(Node):
             RobotStateDual,
             '/robot_state_dual',
             self.robot_state_callback,
-            10
-        )
-        
-        # 夹爪命令发布者
-        self.gripper_cmd_pub = self.create_publisher(
-            JiaZhuaDualCmd,
-            '/jiazhua_cmd',
-            10
-        )
-        
-        # 夹爪状态订阅者
-        self.left_gripper_state_sub = self.create_subscription(
-            StampedFloat64MultiArray,
-            '/left_arm/jiazhua_state',
-            self.left_gripper_state_callback,
-            10
-        )
-        
-        self.right_gripper_state_sub = self.create_subscription(
-            StampedFloat64MultiArray,
-            '/right_arm/jiazhua_state',
-            self.right_gripper_state_callback,
             10
         )
         
@@ -150,10 +122,8 @@ class JAKATeleopROS2Node(Node):
         self.get_logger().info("  - 按住握持按钮激活控制")
         self.get_logger().info("  - 松开握持按钮保持位姿记忆")
         self.get_logger().info("  - 按B键开始/停止数据记录")
-        self.get_logger().info("  - 按前方按钮控制夹爪开合")
         self.get_logger().info("✅ XrClient使用placo_controller实例，避免重复创建")
         self.get_logger().info("✅ 数据记录器和日志状态已正确初始化")
-        self.get_logger().info("✅ 夹爪控制功能已添加")
     
     def robot_state_callback(self, msg: RobotStateDual):
         """机器人状态回调"""
@@ -165,22 +135,6 @@ class JAKATeleopROS2Node(Node):
                 
         except Exception as e:
             self.get_logger().error(f"处理机器人状态时出错: {e}")
-    
-    def left_gripper_state_callback(self, msg: StampedFloat64MultiArray):
-        """左夹爪状态回调"""
-        try:
-            if len(msg.data) > 0:
-                self.gripper_states["left"] = msg.data[0]
-        except Exception as e:
-            self.get_logger().error(f"处理左夹爪状态时出错: {e}")
-    
-    def right_gripper_state_callback(self, msg: StampedFloat64MultiArray):
-        """右夹爪状态回调"""
-        try:
-            if len(msg.data) > 0:
-                self.gripper_states["right"] = msg.data[0]
-        except Exception as e:
-            self.get_logger().error(f"处理右夹爪状态时出错: {e}")
     
     def update_placo_robot_state(self):
         """更新Placo机器人状态"""
@@ -239,39 +193,6 @@ class JAKATeleopROS2Node(Node):
             delta_rot = quat_diff_as_angle_axis(self.ref_controller_quat[src_name], controller_quat)
 
         return delta_xyz, delta_rot
-    
-    def update_gripper_control(self):
-        """更新夹爪控制（使用前方按钮）"""
-        try:
-            # 获取左右前方按钮状态
-            left_trigger = self.placo_controller.xr_client.get_key_value_by_name("left_trigger")
-            right_trigger = self.placo_controller.xr_client.get_key_value_by_name("right_trigger")
-            
-            # 前方按钮值范围：0.0（完全松开）到 1.0（完全按下）
-            # 夹爪值范围：1.0（松开）到 0.0（夹紧）
-            # 所以需要反向映射：trigger_value -> 1.0 - trigger_value
-            
-            left_gripper_val = 1.0 - left_trigger
-            right_gripper_val = 1.0 - right_trigger
-            
-            # 创建夹爪命令消息
-            gripper_cmd = JiaZhuaDualCmd()
-            gripper_cmd.val_left = left_gripper_val
-            gripper_cmd.speed_left = self.gripper_speed
-            gripper_cmd.val_right = right_gripper_val
-            gripper_cmd.speed_right = self.gripper_speed
-            
-            # 发布夹爪命令
-            self.gripper_cmd_pub.publish(gripper_cmd)
-            
-            # 可选：记录夹爪状态变化
-            if abs(left_gripper_val - self.gripper_states.get("left", 1.0)) > 0.1:
-                self.get_logger().info(f"左夹爪: {left_gripper_val:.2f} (前方按钮: {left_trigger:.2f})")
-            if abs(right_gripper_val - self.gripper_states.get("right", 1.0)) > 0.1:
-                self.get_logger().info(f"右夹爪: {right_gripper_val:.2f} (前方按钮: {right_trigger:.2f})")
-                
-        except Exception as e:
-            self.get_logger().error(f"夹爪控制出错: {e}")
     
     def _update_ik_with_memory(self):
         """带位姿记忆的IK更新（核心修改）"""
@@ -340,9 +261,6 @@ class JAKATeleopROS2Node(Node):
         try:
             # 使用带记忆的IK更新
             self._update_ik_with_memory()
-            
-            # 更新夹爪控制
-            self.update_gripper_control()
             
             # 检查按钮状态
             self.check_logging_button()
@@ -454,10 +372,6 @@ class JAKATeleopROS2Node(Node):
                 "active_status": {
                     "left": self.active.get("left_arm", False),
                     "right": self.active.get("right_arm", False)
-                },
-                "gripper_states": {
-                    "left": self.gripper_states.get("left", 1.0),
-                    "right": self.gripper_states.get("right", 1.0)
                 }
             }
             
