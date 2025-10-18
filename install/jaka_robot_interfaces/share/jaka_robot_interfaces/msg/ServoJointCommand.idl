@@ -1,0 +1,17 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from jaka_robot_interfaces/msg/ServoJointCommand.msg
+// generated code does not contain a copyright notice
+
+#include "jaka_robot_interfaces/msg/JointValue.idl"
+
+module jaka_robot_interfaces {
+  module msg {
+    @verbatim (language="comment", text=
+      "servo_interfaces/msg/ServoJointCommand.msg")
+    struct ServoJointCommand {
+      jaka_robot_interfaces::msg::JointValue joint_pos_left;
+
+      jaka_robot_interfaces::msg::JointValue joint_pos_right;
+    };
+  };
+};

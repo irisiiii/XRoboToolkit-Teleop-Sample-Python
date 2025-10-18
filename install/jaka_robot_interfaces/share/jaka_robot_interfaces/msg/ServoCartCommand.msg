@@ -1,0 +1,2 @@
+CartesianPose end_pose_left
+CartesianPose end_pose_right

@@ -1,0 +1,31 @@
+// generated from rosidl_adapter/resource/srv.idl.em
+// with input from jaka_robot_interfaces/srv/ServoMovJ.srv
+// generated code does not contain a copyright notice
+
+#include "jaka_robot_interfaces/msg/JointValue.idl"
+#include "jaka_robot_interfaces/msg/MoveMode.idl"
+
+module jaka_robot_interfaces {
+  module srv {
+    @verbatim (language="comment", text=
+      "ServoMovJ.srv" "\n"
+      "Request part: 目标关节位置" "\n"
+      "JointValue joint_pos")
+    struct ServoMovJ_Request {
+      jaka_robot_interfaces::msg::JointValue joint_pos_left;
+
+      jaka_robot_interfaces::msg::JointValue joint_pos_right;
+
+      jaka_robot_interfaces::msg::MoveMode move_mode;
+
+      uint32 step_num;
+    };
+    @verbatim (language="comment", text=
+      "Response part: 是否成功")
+    struct ServoMovJ_Response {
+      boolean success;
+
+      string message;
+    };
+  };
+};

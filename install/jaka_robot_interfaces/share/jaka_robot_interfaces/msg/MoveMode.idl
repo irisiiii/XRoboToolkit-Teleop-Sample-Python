@@ -1,0 +1,17 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from jaka_robot_interfaces/msg/MoveMode.msg
+// generated code does not contain a copyright notice
+
+
+module jaka_robot_interfaces {
+  module msg {
+    @verbatim (language="comment", text=
+      "MoveMode.msg" "\n"
+      "定义一个整型字段，表示运动模式")
+    struct MoveMode {
+      @verbatim (language="comment", text=
+        "0 = ABS, 1 = INCR, 2 = CONTINUE")
+      int32 mode;
+    };
+  };
+};

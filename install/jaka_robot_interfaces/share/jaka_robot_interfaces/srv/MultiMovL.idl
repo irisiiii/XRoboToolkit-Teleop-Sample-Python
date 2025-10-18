@@ -1,0 +1,39 @@
+// generated from rosidl_adapter/resource/srv.idl.em
+// with input from jaka_robot_interfaces/srv/MultiMovL.srv
+// generated code does not contain a copyright notice
+
+#include "jaka_robot_interfaces/msg/CartesianPose.idl"
+#include "jaka_robot_interfaces/msg/MoveMode.idl"
+
+module jaka_robot_interfaces {
+  module srv {
+    @verbatim (language="comment", text=
+      "MultiMovL.srv")
+    struct MultiMovL_Request {
+      int32 robot_id;
+
+      jaka_robot_interfaces::msg::MoveMode left_move_mode;
+
+      jaka_robot_interfaces::msg::MoveMode right_move_mode;
+
+      boolean is_block;
+
+      jaka_robot_interfaces::msg::CartesianPose end_pos_left;
+
+      jaka_robot_interfaces::msg::CartesianPose end_pos_right;
+
+      @verbatim (language="comment", text=
+        "长度为2")
+      sequence<double> vel;
+
+      @verbatim (language="comment", text=
+        "长度为2")
+      sequence<double> acc;
+    };
+    struct MultiMovL_Response {
+      int32 ret_code;
+
+      string message;
+    };
+  };
+};

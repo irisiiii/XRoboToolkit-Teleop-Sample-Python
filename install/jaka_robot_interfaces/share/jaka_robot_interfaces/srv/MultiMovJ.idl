@@ -1,0 +1,56 @@
+// generated from rosidl_adapter/resource/srv.idl.em
+// with input from jaka_robot_interfaces/srv/MultiMovJ.srv
+// generated code does not contain a copyright notice
+
+#include "jaka_robot_interfaces/msg/JointValue.idl"
+#include "jaka_robot_interfaces/msg/MoveMode.idl"
+
+module jaka_robot_interfaces {
+  module srv {
+    @verbatim (language="comment", text=
+      "请求部分")
+    struct MultiMovJ_Request {
+      @verbatim (language="comment", text=
+        "LEFT(0), RIGHT(1), DUAL(-1)")
+      int32 robot_id;
+
+      @verbatim (language="comment", text=
+        "MoveMode move_mode" "\n"
+        "左臂运动模式")
+      jaka_robot_interfaces::msg::MoveMode left_move_mode;
+
+      @verbatim (language="comment", text=
+        "右臂运动模式")
+      jaka_robot_interfaces::msg::MoveMode right_move_mode;
+
+      @verbatim (language="comment", text=
+        "TRUE(阻塞) 或 FALSE(非阻塞)")
+      boolean is_block;
+
+      jaka_robot_interfaces::msg::JointValue joint_pos_left;
+
+      jaka_robot_interfaces::msg::JointValue joint_pos_right;
+
+      @verbatim (language="comment", text=
+        "2个机器人速度指令")
+      sequence<double> vel;
+
+      @verbatim (language="comment", text=
+        "2个机器人加速度指令")
+      sequence<double> acc;
+    };
+    @verbatim (language="comment", text=
+      "响应部分")
+    struct MultiMovJ_Response {
+      @verbatim (language="comment", text=
+        "返回的错误码")
+      int32 ret_code;
+
+      @verbatim (language="comment", text=
+        "错误信息或成功提示")
+      string message;
+
+      boolean success;
+    };
+  };
+};

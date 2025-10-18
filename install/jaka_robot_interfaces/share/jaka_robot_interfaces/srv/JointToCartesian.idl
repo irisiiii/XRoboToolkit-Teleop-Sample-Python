@@ -1,0 +1,30 @@
+// generated from rosidl_adapter/resource/srv.idl.em
+// with input from jaka_robot_interfaces/srv/JointToCartesian.srv
+// generated code does not contain a copyright notice
+
+#include "jaka_robot_interfaces/msg/CartesianPose.idl"
+#include "jaka_robot_interfaces/msg/JointValue.idl"
+
+module jaka_robot_interfaces {
+  module srv {
+    @verbatim (language="comment", text=
+      "JointToCartesian.srv" "\n"
+      "Request part: 输入关节角度")
+    struct JointToCartesian_Request {
+      jaka_robot_interfaces::msg::JointValue joint_value;
+
+      @verbatim (language="comment", text=
+        "0: 左臂, 1: 右臂")
+      uint8 robot_id;
+    };
+    @verbatim (language="comment", text=
+      "Response part: 返回笛卡尔位姿")
+    struct JointToCartesian_Response {
+      jaka_robot_interfaces::msg::CartesianPose cartesian_pose;
+
+      boolean success;
+
+      string message;
+    };
+  };
+};

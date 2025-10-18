@@ -1,0 +1,9 @@
+# ServoMovJ.srv
+# Request part: 目标关节位置
+# JointValue joint_pos
+JointValue joint_pos_left
+JointValue joint_pos_right
+
+MoveMode move_mode
+uint32 step_num
+

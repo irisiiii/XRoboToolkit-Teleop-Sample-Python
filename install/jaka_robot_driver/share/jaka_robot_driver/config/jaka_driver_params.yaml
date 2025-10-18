@@ -1,0 +1,20 @@
+# JAKA机器人驱动节点参数配置文件
+
+jaka_driver_node:
+  ros__parameters:
+    # 基础配置
+    robot_ip: "192.168.2.200"
+    
+    # 测试模式配置
+    servo_cart_test_mode: false
+    
+    # 伺服模式动态参数
+    servo_mode_enable: false   
+    # servo_mode_enable: True
+    # 伺服运动参数 (仅在非伺服模式下可修改)
+    servo_joint_vel: 360.0    # 伺服关节速度 #360
+    servo_joint_acc: 480.0     # 伺服关节加速度   #240
+    servo_joint_jerk: 720.0    # 伺服关节加加速度
+
+    
+    # 关节插补步长

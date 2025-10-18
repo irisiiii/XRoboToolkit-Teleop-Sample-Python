@@ -1,0 +1,15 @@
+# 请求部分
+int32 robot_id           # LEFT(0), RIGHT(1), DUAL(-1)
+# MoveMode move_mode
+MoveMode left_move_mode  # 左臂运动模式
+MoveMode right_move_mode # 右臂运动模式
+bool is_block            # TRUE(阻塞) 或 FALSE(非阻塞)
+JointValue joint_pos_left
+JointValue joint_pos_right
+float64[] vel            # 2个机器人速度指令
+float64[] acc            # 2个机器人加速度指令
+---
+# 响应部分
+int32 ret_code           # 返回的错误码
+string message           # 错误信息或成功提示
+bool success
