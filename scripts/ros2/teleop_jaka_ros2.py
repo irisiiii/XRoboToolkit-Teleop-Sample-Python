@@ -12,10 +12,15 @@ from jaka_robot_interfaces.msg import RobotStateDual, ServoJointCommand
 # 导入XRoboToolkit的核心组件
 from xrobotoolkit_teleop.common.data_logger import DataLogger
 from xrobotoolkit_teleop.simulation.placo_teleop_controller import PlacoTeleopController
-from xrobotoolkit_teleop.utils.geometry import R_HEADSET_TO_WORLD
+from xrobotoolkit_teleop.utils.geometry import (
+    R_HEADSET_TO_WORLD, 
+    apply_delta_pose, 
+    quat_diff_as_angle_axis
+)
 from xrobotoolkit_teleop.utils.path_utils import ASSET_PATH
+import meshcat.transformations as tf
 
-# JAKA双臂机器人配置（与之前相同）
+# JAKA双臂机器人配置
 DEFAULT_JAKA_URDF_PATH = os.path.join(ASSET_PATH, "jaka/robot.urdf")
 
 INITIAL_JOINT_POSITIONS = {
@@ -65,6 +70,18 @@ class JAKATeleopROS2Node(Node):
             dt=0.02  # 50Hz
         )
         
+        # === 修改2：添加位姿记忆状态变量 ===
+        # 末端执行器参考位姿（机器人坐标系）
+        self.ref_ee_xyz = {"left_arm": None, "right_arm": None}
+        self.ref_ee_quat = {"left_arm": None, "right_arm": None}
+        
+        # 控制器参考位姿（XR坐标系）
+        self.ref_controller_xyz = {"left_arm": None, "right_arm": None}
+        self.ref_controller_quat = {"left_arm": None, "right_arm": None}
+        
+        # 激活状态
+        self.active = {"left_arm": False, "right_arm": False}
+        
         # ROS2发布者和订阅者
         self.servo_joint_pub = self.create_publisher(
             ServoJointCommand, 
@@ -102,6 +119,7 @@ class JAKATeleopROS2Node(Node):
         self.get_logger().info("  - 左手控制器控制左臂")
         self.get_logger().info("  - 右手控制器控制右臂")
         self.get_logger().info("  - 按住握持按钮激活控制")
+        self.get_logger().info("  - 松开握持按钮保持位姿记忆")
         self.get_logger().info("  - 按B键开始/停止数据记录")
     
     def robot_state_callback(self, msg: RobotStateDual):
@@ -129,14 +147,116 @@ class JAKATeleopROS2Node(Node):
         
         self.placo_controller.placo_robot.update_kinematics()
     
+    def _get_link_pose(self, link_name: str):
+        """获取连杆的当前世界位姿"""
+        T_world_link = self.placo_controller.placo_robot.get_T_world_frame(link_name)
+        pos = T_world_link[:3, 3]
+        quat = tf.quaternion_from_matrix(T_world_link)
+        return pos, quat
+    
+    def _process_xr_pose(self, xr_pose, src_name):
+        """处理XR控制器位姿，计算增量变化"""
+        # 获取位置和方向
+        controller_xyz = np.array([xr_pose[0], xr_pose[1], xr_pose[2]])
+        controller_quat = [
+            xr_pose[6],  # w
+            xr_pose[3],  # x
+            xr_pose[4],  # y
+            xr_pose[5],  # z
+        ]
+
+        # 应用坐标系变换
+        controller_xyz = R_HEADSET_TO_WORLD @ controller_xyz
+
+        R_transform = np.eye(4)
+        R_transform[:3, :3] = R_HEADSET_TO_WORLD
+        R_quat = tf.quaternion_from_matrix(R_transform)
+        controller_quat = tf.quaternion_multiply(
+            tf.quaternion_multiply(R_quat, controller_quat),
+            tf.quaternion_conjugate(R_quat),
+        )
+
+        # === 修改3：计算增量变化 ===
+        if self.ref_controller_xyz[src_name] is None:
+            # 第一次激活，设置参考位置
+            self.ref_controller_xyz[src_name] = controller_xyz
+            self.ref_controller_quat[src_name] = controller_quat
+
+            delta_xyz = np.zeros(3)
+            delta_rot = np.array([0.0, 0.0, 0.0])
+        else:
+            # 计算增量变化
+            delta_xyz = (controller_xyz - self.ref_controller_xyz[src_name]) * self.placo_controller.scale_factor
+            delta_rot = quat_diff_as_angle_axis(self.ref_controller_quat[src_name], controller_quat)
+
+        return delta_xyz, delta_rot
+    
+    def _update_ik_with_memory(self):
+        """带位姿记忆的IK更新（核心修改）"""
+        # 更新机器人状态
+        self.update_placo_robot_state()
+        self.placo_controller.placo_robot.update_kinematics()
+
+        for src_name, config in DEFAULT_JAKA_MANIPULATOR_CONFIG.items():
+            # 获取握持按钮状态
+            xr_grip_val = self.placo_controller.xr_client.get_key_value_by_name(config["control_trigger"])
+            current_active = xr_grip_val > 0.9
+
+            if current_active:
+                # === 修改4：第一次激活时记录参考位姿 ===
+                if not self.active[src_name]:
+                    # 从不激活变为激活：记录当前机器人末端位姿作为参考
+                    self.get_logger().info(f"{src_name} 激活")
+                    self.ref_ee_xyz[src_name], self.ref_ee_quat[src_name] = self._get_link_pose(config["link_name"])
+                    # 清空控制器参考位置，让_process_xr_pose重新设置
+                    self.ref_controller_xyz[src_name] = None
+                    self.ref_controller_quat[src_name] = None
+
+                # 获取当前XR控制器位姿
+                xr_pose = self.placo_controller.xr_client.get_pose_by_name(config["pose_source"])
+                delta_xyz, delta_rot = self._process_xr_pose(xr_pose, src_name)
+                
+                # === 修改5：基于参考位姿计算目标位姿 ===
+                if self.ref_ee_xyz[src_name] is not None:
+                    if config.get("control_mode", "pose") == "position":
+                        # 位置控制模式
+                        target_xyz = self.ref_ee_xyz[src_name] + delta_xyz
+                        self.placo_controller.effector_task[src_name].target_world = target_xyz
+                    else:
+                        # 完整位姿控制模式
+                        target_xyz, target_quat = apply_delta_pose(
+                            self.ref_ee_xyz[src_name],
+                            self.ref_ee_quat[src_name],
+                            delta_xyz,
+                            delta_rot,
+                        )
+                        target_pose = tf.quaternion_matrix(target_quat)
+                        target_pose[:3, 3] = target_xyz
+                        self.placo_controller.effector_task[src_name].T_world_frame = target_pose
+
+            else:
+                # === 修改6：停用时清空参考位姿 ===
+                if self.active[src_name]:
+                    # 从激活变为不激活info(f"{src_name} 停用")
+                    self.ref_ee_xyz[src_name] = None
+                    self.ref_ee_quat[src_name] = None
+                    self.ref_controller_xyz[src_name] = None
+                    self.ref_controller_quat[src_name] = None
+
+            # 更新激活状态
+            self.active[src_name] = current_active
+
+        # 执行IK求解
+        try:
+            self.placo_controller.solver.solve(True)
+        except RuntimeError as e:
+            self.get_logger().error(f"IK solver failed: {e}")
+    
     def control_loop(self):
         """主控制循环"""
         try:
-            # 更新机器人状态
-            self.update_placo_robot_state()
-            
-            # 执行IK更新
-            self.placo_controller._update_ik()
+            # === 修改7：使用带记忆的IK更新替代原来的方法 ===
+            self._update_ik_with_memory()
             
             # 检查按钮状态
             self.check_logging_button()
@@ -146,8 +266,8 @@ class JAKATeleopROS2Node(Node):
             right_target = self.placo_controller.placo_robot.state.q[14:21].copy()
             
             # 检查哪些臂是激活的
-            left_active = self.placo_controller.active.get("left_arm", False)
-            right_active = self.placo_controller.active.get("right_arm", False)
+            left_active = self.active.get("left_arm", False)
+            right_active = self.active.get("right_arm", False)
             
             # 只有激活的臂才发送新的目标位置
             if left_active or right_active:
@@ -160,7 +280,8 @@ class JAKATeleopROS2Node(Node):
             self.publish_joint_states(left_target, right_target)
             
             # 更新meshcat可视化
-            self.placo_controller._update_placo_viz()
+            if hasattr(self.placo_controller, '_update_placo_viz'):
+                self.placo_controller._update_placo_viz()
             
             # 记录数据
             if self.is_logging:
@@ -222,7 +343,7 @@ class JAKATeleopROS2Node(Node):
                 self.get_logger().info("开始数据记录")
             else:
                 self.get_logger().info("停止数据记录，保存数据...")
-                self.data_logger.save()
+                self.dreloadata_logger.save()
                 self.data_logger.reset()
         
         self.prev_b_button_state = b_button_state
@@ -240,6 +361,10 @@ class JAKATeleopROS2Node(Node):
                 "qpos_des": {
                     "left": left_joints.tolist(),
                     "right": right_joints.tolist()
+                },
+                "active_status": {
+                    "left": self.active.get("left_arm", False),
+                    "right": self.active.get("right_arm", False)
                 }
             }
             
