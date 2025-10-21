@@ -20,6 +20,7 @@ find_package(nlohmann_json CONFIG REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(OpenCV REQUIRED COMPONENTS core imgcodecs)
+find_package(PkgConfig REQUIRED)
 pkg_check_modules(CURL REQUIRED libcurl)
 set(CURSES_NEED_WIDE TRUE)
 set(CURSES_NEED_NCURSES TRUE)  # 可选：确保使用 ncurses 实现
