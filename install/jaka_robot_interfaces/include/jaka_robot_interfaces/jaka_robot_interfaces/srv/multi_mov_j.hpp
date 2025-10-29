@@ -1,12 +1,1 @@
-// generated from rosidl_generator_cpp/resource/idl.hpp.em
-// generated code does not contain a copyright notice
-
-#ifndef JAKA_ROBOT_INTERFACES__SRV__MULTI_MOV_J_HPP_
-#define JAKA_ROBOT_INTERFACES__SRV__MULTI_MOV_J_HPP_
-
-#include "jaka_robot_interfaces/srv/detail/multi_mov_j__struct.hpp"
-#include "jaka_robot_interfaces/srv/detail/multi_mov_j__builder.hpp"
-#include "jaka_robot_interfaces/srv/detail/multi_mov_j__traits.hpp"
-#include "jaka_robot_interfaces/srv/detail/multi_mov_j__type_support.hpp"
-
-#endif  // JAKA_ROBOT_INTERFACES__SRV__MULTI_MOV_J_HPP_
+/root/jwq/xr/XRoboToolkit-Teleop-Sample-Python/build/jaka_robot_interfaces/rosidl_generator_cpp/jaka_robot_interfaces/srv/multi_mov_j.hpp

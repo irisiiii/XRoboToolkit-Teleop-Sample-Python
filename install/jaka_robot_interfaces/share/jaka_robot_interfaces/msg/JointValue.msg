@@ -1,2 +1,1 @@
-# JointValue.msg
-float64[7] joint_values  # 7轴×2臂
+/root/jwq/xr/XRoboToolkit-Teleop-Sample-Python/jaka_robot_interfaces/msg/JointValue.msg

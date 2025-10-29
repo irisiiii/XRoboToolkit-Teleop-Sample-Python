@@ -37,6 +37,13 @@ def generate_launch_description():
         description='是否启用仿真模式'
     )
     
+    # 声明伺服模式参数
+    servo_mode_enable_arg = DeclareLaunchArgument(
+        'servo_mode_enable',
+        default_value='false',
+        description='是否启用伺服模式 (true/false)'
+    )
+    
     # 真实模式节点
     jaka_driver_node = Node(
         package='jaka_robot_driver',
@@ -48,6 +55,7 @@ def generate_launch_description():
             LaunchConfiguration('params_file'),
             {
                 'robot_ip': LaunchConfiguration('robot_ip'),
+                'servo_mode_enable': LaunchConfiguration('servo_mode_enable'),
             }
         ],
         arguments=[
@@ -74,6 +82,7 @@ def generate_launch_description():
         params_file_arg,
         robot_ip_arg,
         simulation_arg,
+        servo_mode_enable_arg,
         
         # 启动节点（根据仿真参数选择）
         jaka_driver_node,

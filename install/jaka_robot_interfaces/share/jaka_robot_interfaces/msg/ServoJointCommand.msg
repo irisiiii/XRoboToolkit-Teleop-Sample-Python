@@ -1,3 +1,1 @@
-# servo_interfaces/msg/ServoJointCommand.msg
-JointValue joint_pos_left
-JointValue joint_pos_right
+/root/jwq/xr/XRoboToolkit-Teleop-Sample-Python/jaka_robot_interfaces/msg/ServoJointCommand.msg

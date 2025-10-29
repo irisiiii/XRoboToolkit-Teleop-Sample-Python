@@ -1,7 +1,1 @@
-# CartesianPose.msg
-float64 x
-float64 y
-float64 z
-float64 rx
-float64 ry
-float64 rz
+/root/jwq/xr/XRoboToolkit-Teleop-Sample-Python/jaka_robot_interfaces/msg/CartesianPose.msg

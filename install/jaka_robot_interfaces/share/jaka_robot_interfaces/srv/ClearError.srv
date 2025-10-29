@@ -1,5 +1,1 @@
-# Request (empty - no parameters needed to clear error)
----
-# Response
-bool success
-string message
+/root/jwq/xr/XRoboToolkit-Teleop-Sample-Python/jaka_robot_interfaces/srv/ClearError.srv

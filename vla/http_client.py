@@ -15,8 +15,13 @@ from cv_bridge import CvBridge
 import json
 import cv2
 
+# --- 新增代码: 导入并激活 json_numpy 以支持 numpy 数组的 JSON 序列化 ---
+import json_numpy
+json_numpy.patch()
+# --- 新增结束 ---
+
 # 导入自定义消息类型
-from jaka_robot_interfaces.msg import ServoJointCommand, JointValue
+from jaka_robot_interfaces.msg import MultiMovJCommand, JointValue, MoveMode
 from jiazhua_interfaces.msg import JiaZhuaDualCmd
 from frame_sync_msgs.msg import StampedFloat64MultiArray
 
@@ -64,8 +69,8 @@ class SimpleGr00tClient(Node):
         
         # 发布话题
         self.arm_pub = self.create_publisher(
-            ServoJointCommand,
-            '/servo_joint_command',
+            MultiMovJCommand,
+            '/multi_movj_cmd',
             10
         )
         self.gripper_pub = self.create_publisher(
@@ -130,11 +135,27 @@ class SimpleGr00tClient(Node):
             action: 8维数组 [7个关节角度, 1个夹爪位置]
         """
         # 发布机械臂指令
-        arm_cmd = ServoJointCommand()
+        arm_cmd = MultiMovJCommand()
+        arm_cmd.robot_id = 0  # LEFT(0) - 只控制左臂
+        
+        # 设置运动模式为绝对位置模式
+        arm_cmd.left_move_mode = MoveMode()
+        arm_cmd.left_move_mode.mode = 0  # ABS = 0
+        arm_cmd.right_move_mode = MoveMode()
+        arm_cmd.right_move_mode.mode = 0  # ABS = 0
+        
+        arm_cmd.is_block = False  # 非阻塞模式
+        
+        # 设置关节位置
         arm_cmd.joint_pos_left = JointValue()
         arm_cmd.joint_pos_left.joint_values = action[:7].tolist()
         arm_cmd.joint_pos_right = JointValue()
         arm_cmd.joint_pos_right.joint_values = [0.0] * 7  # 右臂不动
+        
+        # 设置速度和加速度 (单位: rad/s 和 rad/s^2)
+        arm_cmd.vel = [0.5, 0.5]  # 左臂和右臂的速度
+        arm_cmd.acc = [2.0, 2.0]  # 左臂和右臂的加速度
+        
         self.arm_pub.publish(arm_cmd)
         
         # 发布夹爪指令
@@ -151,33 +172,33 @@ class SimpleGr00tClient(Node):
             # 添加任务描述
             obs["annotation.human.action.task_description"] = [task_description]
             
-            # 将numpy数组转换为列表以便JSON序列化
-            obs_serializable = {}
-            for key, value in obs.items():
-                if isinstance(value, np.ndarray):
-                    obs_serializable[key] = value.tolist()
-                else:
-                    obs_serializable[key] = value
-            
-            # 发送HTTP请求
+            # --- 修改: 直接发送包含numpy数组的字典 ---
+            # json_numpy补丁会自动处理序列化
             response = requests.post(
                 self.server_url,
-                json={"observation": obs_serializable},
+                json={"observation": obs},
                 timeout=10.0
             )
             
             if response.status_code == 200:
                 action_data = response.json()
+                
+                # --- 修改: 将返回的list转为numpy数组 ---
+                # requests.json() 会将JSON数组解析为Python list
+                # 我们需要将其转换回numpy数组以供下游使用
+                for key, value in action_data.items():
+                    if isinstance(value, list):
+                        action_data[key] = np.array(value)
                 return action_data
             else:
-                print(f"❌ 服务器返回错误: {response.status_code}")
+                print(f"❌ 服务器返回错误: {response.status_code} - {response.text}")
                 return None
                 
         except Exception as e:
             print(f"❌ 请求失败: {e}")
             return None
     
-    def run_control_loop(self, task_description="Pick up the object", 
+    def run_controprol_loop(self, task_description="Pick up the object", 
                         max_steps=1000, control_hz=20):
         """运行控制循环"""
         print(f"=== 开始控制循环 ===")
@@ -210,12 +231,41 @@ class SimpleGr00tClient(Node):
                 print(f"\n[步骤 {step_count}] 请求动作...")
                 action_chunk = self.request_action(obs, task_description)
                 
-                if action_chunk is None or 'action' not in action_chunk:
-                    print("❌ 未获取到有效动作")
+                if action_chunk is None:
+                    print("❌ 未获取到有效动作 (action_chunk为None)")
                     break
                 
-                # 3. 执行动作chunk（假设返回20步，每步50ms）
-                actions = np.array(action_chunk['action'])
+                # 3. 解析动作chunk
+                # 服务器返回格式: {'action.left_arm_joint': (N,7), 'action.left_gripper': (N,1)}
+                # 需要合并为 (N,8) 的数组
+                if 'action.left_arm_joint' in action_chunk and 'action.left_gripper' in action_chunk:
+                    arm_actions = action_chunk['action.left_arm_joint']
+                    gripper_actions = action_chunk['action.left_gripper']
+                    
+                    # 确保是numpy数组
+                    if not isinstance(arm_actions, np.ndarray):
+                        arm_actions = np.array(arm_actions)
+                    if not isinstance(gripper_actions, np.ndarray):
+                        gripper_actions = np.array(gripper_actions)
+                    
+                    # 合并为 (N, 8) 数组
+                    actions = np.concatenate([arm_actions, gripper_actions], axis=1)
+                    
+                elif 'action_pred' in action_chunk:
+                    # 兼容旧格式
+                    actions = action_chunk['action_pred']
+                    if not isinstance(actions, np.ndarray):
+                        actions = np.array(actions)
+                elif 'action' in action_chunk:
+                    # 兼容另一种格式
+                    actions = action_chunk['action']
+                    if not isinstance(actions, np.ndarray):
+                        actions = np.array(actions)
+                else:
+                    print(f"❌ 未知的动作格式，键名: {list(action_chunk.keys())}")
+                    break
+                
+                # 确保是2维数组
                 if len(actions.shape) == 1:
                     actions = np.expand_dims(actions, axis=0)
                 
@@ -269,7 +319,7 @@ def main():
     try:
         # 运行控制循环
         client.run_control_loop(
-            task_description="Pick up the radish plush toy and put it into the basket",
+            task_description="Pick up the green bowl and put it into the brown woven basket",
             max_steps=10000,
             control_hz=20
         )

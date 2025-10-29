@@ -1,17 +1,1 @@
-// generated from rosidl_adapter/resource/msg.idl.em
-// with input from jaka_robot_interfaces/msg/JointValue.msg
-// generated code does not contain a copyright notice
-
-
-module jaka_robot_interfaces {
-  module msg {
-    typedef double double__7[7];
-    @verbatim (language="comment", text=
-      "JointValue.msg")
-    struct JointValue {
-      @verbatim (language="comment", text=
-        "7轴×2臂")
-      double__7 joint_values;
-    };
-  };
-};
+/root/jwq/xr/XRoboToolkit-Teleop-Sample-Python/build/jaka_robot_interfaces/rosidl_adapter/jaka_robot_interfaces/msg/JointValue.idl

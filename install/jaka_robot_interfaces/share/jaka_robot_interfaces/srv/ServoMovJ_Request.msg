@@ -1,9 +1,1 @@
-# ServoMovJ.srv
-# Request part: 目标关节位置
-# JointValue joint_pos
-JointValue joint_pos_left
-JointValue joint_pos_right
-
-MoveMode move_mode
-uint32 step_num
-
+/root/jwq/xr/XRoboToolkit-Teleop-Sample-Python/build/jaka_robot_interfaces/rosidl_cmake/srv/ServoMovJ_Request.msg

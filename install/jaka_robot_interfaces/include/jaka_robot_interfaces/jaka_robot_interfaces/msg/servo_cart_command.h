@@ -1,12 +1,1 @@
-// generated from rosidl_generator_c/resource/idl.h.em
-// with input from jaka_robot_interfaces:msg/ServoCartCommand.idl
-// generated code does not contain a copyright notice
-
-#ifndef JAKA_ROBOT_INTERFACES__MSG__SERVO_CART_COMMAND_H_
-#define JAKA_ROBOT_INTERFACES__MSG__SERVO_CART_COMMAND_H_
-
-#include "jaka_robot_interfaces/msg/detail/servo_cart_command__struct.h"
-#include "jaka_robot_interfaces/msg/detail/servo_cart_command__functions.h"
-#include "jaka_robot_interfaces/msg/detail/servo_cart_command__type_support.h"
-
-#endif  // JAKA_ROBOT_INTERFACES__MSG__SERVO_CART_COMMAND_H_
+/root/jwq/xr/XRoboToolkit-Teleop-Sample-Python/build/jaka_robot_interfaces/rosidl_generator_c/jaka_robot_interfaces/msg/servo_cart_command.h

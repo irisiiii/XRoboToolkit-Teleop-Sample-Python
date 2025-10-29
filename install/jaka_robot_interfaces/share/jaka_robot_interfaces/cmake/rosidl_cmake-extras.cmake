@@ -1,4 +1,1 @@
-# generated from rosidl_cmake/cmake/rosidl_cmake-extras.cmake.in
-
-set(jaka_robot_interfaces_IDL_FILES "srv/MultiMovJ.idl;srv/ServoMovJ.idl;srv/MultiMovL.idl;srv/JointToCartesian.idl;srv/ClearError.idl;msg/JointValue.idl;msg/CartesianPose.idl;msg/MoveMode.idl;msg/RobotStateDual.idl;msg/ServoJointCommand.idl;msg/ServoCartCommand.idl")
-set(jaka_robot_interfaces_INTERFACE_FILES "srv/MultiMovJ.srv;srv/MultiMovJ_Request.msg;srv/MultiMovJ_Response.msg;srv/ServoMovJ.srv;srv/ServoMovJ_Request.msg;srv/ServoMovJ_Response.msg;srv/MultiMovL.srv;srv/MultiMovL_Request.msg;srv/MultiMovL_Response.msg;srv/JointToCartesian.srv;srv/JointToCartesian_Request.msg;srv/JointToCartesian_Response.msg;srv/ClearError.srv;srv/ClearError_Request.msg;srv/ClearError_Response.msg;msg/JointValue.msg;msg/CartesianPose.msg;msg/MoveMode.msg;msg/RobotStateDual.msg;msg/ServoJointCommand.msg;msg/ServoCartCommand.msg")
+/root/jwq/xr/XRoboToolkit-Teleop-Sample-Python/build/jaka_robot_interfaces/rosidl_cmake/rosidl_cmake-extras.cmake

@@ -1,4 +1,1 @@
-
-# Response part: 是否成功
-bool success
-string message
+/root/jwq/xr/XRoboToolkit-Teleop-Sample-Python/build/jaka_robot_interfaces/rosidl_cmake/srv/ServoMovJ_Response.msg

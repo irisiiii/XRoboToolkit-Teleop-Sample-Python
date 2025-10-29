@@ -34,7 +34,7 @@ frame_sync_node:
     enable_save_dataset: true #是否开启dataset保存模式
     dataset_save_path: "./data"  # dataset保存路径
     enable_limit_numbers_of_frames_to_save: true  # 是否开启限制帧数
-    limit_numbers_of_frames_to_save: 320  # 最多采集多少帧数
+    limit_numbers_of_frames_to_save: 500  # 最多采集多少帧数
     gripper_trigger_timeout_sec: 5.0  # 夹爪序列检测超时时间（秒）
     gripper_trigger_countdown_sec: 3.0  # 夹爪触发后倒计时秒数
     enable_continuous_collection: true  # 是否开启连续采集模式（完成一轮后重新开始监听）

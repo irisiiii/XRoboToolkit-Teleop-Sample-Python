@@ -1,5 +1,1 @@
-
-# 响应部分
-int32 ret_code           # 返回的错误码
-string message           # 错误信息或成功提示
-bool success
+/root/jwq/xr/XRoboToolkit-Teleop-Sample-Python/build/jaka_robot_interfaces/rosidl_cmake/srv/MultiMovJ_Response.msg

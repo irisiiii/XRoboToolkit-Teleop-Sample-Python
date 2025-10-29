@@ -1,4 +1,1 @@
-JointValue joint_pos_left
-JointValue joint_pos_right
-CartesianPose end_pose_left
-CartesianPose end_pose_right
+/root/jwq/xr/XRoboToolkit-Teleop-Sample-Python/jaka_robot_interfaces/msg/RobotStateDual.msg

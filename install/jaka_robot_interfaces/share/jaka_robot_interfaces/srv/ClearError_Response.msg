@@ -1,4 +1,1 @@
-
-# Response
-bool success
-string message
+/root/jwq/xr/XRoboToolkit-Teleop-Sample-Python/build/jaka_robot_interfaces/rosidl_cmake/srv/ClearError_Response.msg

@@ -1,3 +1,1 @@
-
-int32 ret_code
-string message
+/root/jwq/xr/XRoboToolkit-Teleop-Sample-Python/build/jaka_robot_interfaces/rosidl_cmake/srv/MultiMovL_Response.msg

@@ -61,6 +61,10 @@ class JAKATeleopROS2Node(Node):
         self.is_logging = False
         self.prev_b_button_state = False
         
+        # 回初始位姿按钮状态跟踪
+        self.prev_x_button_state = False  # 左手柄X键
+        self.prev_a_button_state = False  # 右手柄A键
+        
         # 创建Placo遥操作控制器（用于IK求解）
         # 注意：这里会自动创建XrClient实例
         self.placo_controller = PlacoTeleopController(
@@ -151,9 +155,12 @@ class JAKATeleopROS2Node(Node):
         self.get_logger().info("  - 松开握持按钮保持位姿记忆")
         self.get_logger().info("  - 按B键开始/停止数据记录")
         self.get_logger().info("  - 按前方按钮控制夹爪开合")
+        self.get_logger().info("  - 按左手柄X键，左臂回初始位姿")
+        self.get_logger().info("  - 按右手柄A键，右臂回初始位姿")
         self.get_logger().info("✅ XrClient使用placo_controller实例，避免重复创建")
         self.get_logger().info("✅ 数据记录器和日志状态已正确初始化")
         self.get_logger().info("✅ 夹爪控制功能已添加")
+        self.get_logger().info("✅ 回初始位姿功能已添加")
     
     def robot_state_callback(self, msg: RobotStateDual):
         """机器人状态回调"""
@@ -347,6 +354,9 @@ class JAKATeleopROS2Node(Node):
             # 检查按钮状态
             self.check_logging_button()
             
+            # 检查回初始位姿按钮
+            self.check_reset_buttons()
+            
             # 获取求解后的关节角度
             left_target = self.placo_controller.placo_robot.state.q[7:14].copy()
             right_target = self.placo_controller.placo_robot.state.q[14:21].copy()
@@ -436,6 +446,52 @@ class JAKATeleopROS2Node(Node):
                 self.data_logger.reset()
         
         self.prev_b_button_state = b_button_state
+    
+    def check_reset_buttons(self):
+        """检查回初始位姿按钮"""
+        # 获取X键状态（左手柄）
+        x_button_state = self.placo_controller.xr_client.get_button_state_by_name("X")
+        
+        # 检测X键按下事件（边沿触发）
+        if x_button_state and not self.prev_x_button_state:
+            self.get_logger().info("🔄 左臂回初始位姿")
+            # 发送左臂初始关节位置
+            self.send_joint_command(
+                left_joints=np.array(INITIAL_JOINT_POSITIONS['left']),
+                right_joints=None
+            )
+            # 同时更新Placo机器人状态
+            self.placo_controller.placo_robot.state.q[7:14] = INITIAL_JOINT_POSITIONS['left']
+            # 停用左臂控制，清空参考位姿
+            self.active["left_arm"] = False
+            self.ref_ee_xyz["left_arm"] = None
+            self.ref_ee_quat["left_arm"] = None
+            self.ref_controller_xyz["left_arm"] = None
+            self.ref_controller_quat["left_arm"] = None
+        
+        self.prev_x_button_state = x_button_state
+        
+        # 获取A键状态（右手柄）
+        a_button_state = self.placo_controller.xr_client.get_button_state_by_name("A")
+        
+        # 检测A键按下事件（边沿触发）
+        if a_button_state and not self.prev_a_button_state:
+            self.get_logger().info("🔄 右臂回初始位姿")
+            # 发送右臂初始关节位置
+            self.send_joint_command(
+                left_joints=None,
+                right_joints=np.array(INITIAL_JOINT_POSITIONS['right'])
+            )
+            # 同时更新Placo机器人状态
+            self.placo_controller.placo_robot.state.q[14:21] = INITIAL_JOINT_POSITIONS['right']
+            # 停用右臂控制，清空参考位姿
+            self.active["right_arm"] = False
+            self.ref_ee_xyz["right_arm"] = None
+            self.ref_ee_quat["right_arm"] = None
+            self.ref_controller_xyz["right_arm"] = None
+            self.ref_controller_quat["right_arm"] = None
+        
+        self.prev_a_button_state = a_button_state
     
     def log_current_state(self, left_joints, right_joints):
         """记录当前状态"""

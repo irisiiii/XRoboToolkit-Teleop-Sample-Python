@@ -1,4 +1,1 @@
-source;share/jaka_robot_interfaces/environment/ament_prefix_path.sh
-source;share/jaka_robot_interfaces/environment/library_path.sh
-source;share/jaka_robot_interfaces/environment/path.sh
-source;share/jaka_robot_interfaces/environment/pythonpath.sh
+/root/jwq/xr/XRoboToolkit-Teleop-Sample-Python/build/jaka_robot_interfaces/ament_cmake_environment_hooks/local_setup.dsv

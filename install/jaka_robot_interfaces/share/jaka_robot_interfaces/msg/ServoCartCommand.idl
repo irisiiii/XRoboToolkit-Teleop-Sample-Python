@@ -1,15 +1,1 @@
-// generated from rosidl_adapter/resource/msg.idl.em
-// with input from jaka_robot_interfaces/msg/ServoCartCommand.msg
-// generated code does not contain a copyright notice
-
-#include "jaka_robot_interfaces/msg/CartesianPose.idl"
-
-module jaka_robot_interfaces {
-  module msg {
-    struct ServoCartCommand {
-      jaka_robot_interfaces::msg::CartesianPose end_pose_left;
-
-      jaka_robot_interfaces::msg::CartesianPose end_pose_right;
-    };
-  };
-};
+/root/jwq/xr/XRoboToolkit-Teleop-Sample-Python/build/jaka_robot_interfaces/rosidl_adapter/jaka_robot_interfaces/msg/ServoCartCommand.idl

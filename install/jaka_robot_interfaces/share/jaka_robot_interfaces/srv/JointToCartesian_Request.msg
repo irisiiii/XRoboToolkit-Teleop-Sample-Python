@@ -1,5 +1,1 @@
-# JointToCartesian.srv
-# Request part: 输入关节角度
-JointValue joint_value
-uint8 robot_id  # 0: 左臂, 1: 右臂
-
+/root/jwq/xr/XRoboToolkit-Teleop-Sample-Python/build/jaka_robot_interfaces/rosidl_cmake/srv/JointToCartesian_Request.msg

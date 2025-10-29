@@ -26,9 +26,18 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/RobotStateDual.msg"
   "msg/ServoJointCommand.msg"
   "msg/ServoCartCommand.msg"
+  "msg/MultiMovJCommand.msg"
   DEPENDENCIES builtin_interfaces std_msgs  # std_msgs 是你 msg 中可能依赖的类型
 )
 
 # 导出依赖
 ament_export_dependencies(rosidl_default_runtime)
 ament_package()
+
+
+
+
+
+
+
+
